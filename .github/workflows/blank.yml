@@ -1,0 +1,70 @@
+#import libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, f1_score
+import matplotlib.pyplot as plt
+#load the dataset
+df = pd.read_csv("/content/winequality.csv")
+df
+df.head()
+df.info()
+df.describe()
+df.shape
+df.isnull().sum()
+X = df.drop('quality', axis=1)
+y = df['quality']             # Target variable
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+rf_model = RandomForestClassifier(random_state=42)  # Random Forest
+rf_model.fit(X_train, y_train)
+dt_model = DecisionTreeClassifier(random_state=42)  # Decision Tree
+dt_model.fit(X_train, y_train)
+param_grid = {
+       'n_estimators': [100, 200, 300],
+       'max_depth': [None, 5, 10],
+       'min_samples_split': [2, 5, 10]
+   }
+   grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid,
+                              scoring='accuracy', cv=5, n_jobs=-1)
+grid_search.fit(X_train, y_train)  # X_train and y_train are your training data
+best_rf_model = grid_search.best_estimator_
+best_params = grid_search.best_params_
+print("Best Hyperparameters:", best_params)
+y_pred_rf = best_rf_model.predict(X_test)  # Predictions for Random Forest
+y_pred_rf
+y_pred_dt = dt_model.predict(X_test)      # Predictions for Decision Tree
+y_pred_dt
+accuracy_rf = accuracy_score(y_test, y_pred_rf)
+f1_rf = f1_score(y_test, y_pred_rf, average='weighted')
+print("Random Forest Accuracy:", accuracy_rf)
+print("Random Forest F1-score:", f1_rf)
+print("Decision Tree Accuracy:", accuracy_dt)
+print("Decision Tree F1-score:", f1_dt)
+# Random Forest Feature Importance
+importances_rf = best_rf_model.feature_importances_
+features = X_train.columns
+plt.figure(figsize=(6, 4))
+plt.barh(features, importances_rf, align='center')
+plt.xlabel("Feature Importance")
+plt.ylabel("Features")
+plt.title("Feature Importance from Random Forest")
+plt.show()
+importances_dt = dt_model.feature_importances_
+plt.figure(figsize=(6, 4))
+plt.barh(features, importances_dt, align='center', color='black')
+plt.xlabel("Feature Importance")
+plt.ylabel("Features")
+plt.title("Feature Importance from Decision Tree")
+plt.show()
+# .2f formats to 2 decimal places
+print(f"Random Forest Accuracy: {accuracy_rf:.2f}")
+print(f"Decision Tree Accuracy: {accuracy_dt:.2f}")
+print("\n")  # Add an empty line for readability
+if accuracy_rf > accuracy_dt and accuracy_rf > 0.75:
+    print("Random Forest model is giving high accuracy.")
+elif accuracy_rf > accuracy_dt:
+    print("Random Forest model is giving better accuracy than the Decision Tree, but it's not considered high.")
+else:
+    print("Decision Tree is giving better or equal accuracy than the Random Forest.")
